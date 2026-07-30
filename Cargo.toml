@@ -5,7 +5,7 @@ edition = "2021"
 description = "Summon and channel the ghost of any Solana wallet by exhuming its on-chain afterlife."
 license = "MIT"
 authors = ["edwinsocialmedia7"]
-repository = "https://github.com/edwinsocialmedia7/zeroclaw-necromancer"
+repository = "https://github.com/Nnadijoshuac/gimic"
 
 [lib]
 # cdylib → the wasm component; rlib → lets the `summon` example and unit tests
