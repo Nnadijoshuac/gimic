@@ -234,6 +234,22 @@ pub fn render_seance(remains: &Remains, ghost: &Ghost, now_unix: i64) -> String 
     out
 }
 
+/// A compact epitaph suitable for an on-chain SPL Memo (kept short to minimize
+/// transaction size). Deterministic for a given ghost.
+pub fn epitaph_memo(remains: &Remains, ghost: &Ghost, now_unix: i64) -> String {
+    let days = remains.days_since_death(now_unix).unwrap_or(0);
+    // Cause without the long dash-explanation, so the memo stays terse.
+    let cause = ghost
+        .cause_of_death
+        .split(" — ")
+        .next()
+        .unwrap_or(ghost.cause_of_death);
+    format!(
+        "⚰ {} — {}. {} txns, dead {}d. Rest now. [ZeroClaw Necromancer]",
+        ghost.spirit_name, cause, remains.total_signatures, days
+    )
+}
+
 fn tombstone(name: &str, born: &str, died: &str, epitaph: &str) -> String {
     // Keep the slab a fixed inner width; center the fields.
     let w = 41usize;

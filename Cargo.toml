@@ -15,6 +15,16 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# Pure-Rust Ed25519 + base58 for building/signing the optional epitaph memo
+# transaction. All-target (compile natively too) so the tx builder is unit-tested
+# off-wasm. default-features off keeps OS-RNG (getrandom) out of the wasm build —
+# the plugin only ever *signs* with a provided key, it never generates one.
+ed25519-dalek = { version = "2", default-features = false, features = ["alloc"] }
+bs58 = "0.5"
+
+[dev-dependencies]
+# Only for the `gravedigger_keygen` example (native); never linked into the wasm.
+getrandom = "0.2"
 
 # wasm-only: the WIT bindings (export side) and the HTTP client that contributes
 # the gated `wasi:http/outgoing-handler` import (import side). Kept target-scoped

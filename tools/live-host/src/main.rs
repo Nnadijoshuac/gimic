@@ -107,12 +107,22 @@ async fn main() -> Result<()> {
     let necro = Necromancer::instantiate_async(&mut store, &component, &linker).await?;
     let tool = necro.zeroclaw_plugin_tool();
 
+    // Optional epitaph inscription, driven by env for the demo:
+    //   NECRO_INSCRIBE=1  NECRO_SIGNER=<base58 seed>
+    let inscribe = std::env::var("NECRO_INSCRIBE").ok().as_deref() == Some("1");
+    let signer = std::env::var("NECRO_SIGNER").ok();
+
     // Exactly the shape the real host produces: args + injected `__config`.
+    let mut cfg = serde_json::json!({ "rpc_url": rpc_url });
+    if let Some(key) = &signer {
+        cfg["epitaph_signer_key"] = serde_json::Value::String(key.clone());
+    }
     let input = serde_json::json!({
         "address": address,
         "depth": depth,
         "samples": 6,
-        "__config": { "rpc_url": rpc_url }
+        "inscribe": inscribe,
+        "__config": cfg
     })
     .to_string();
 

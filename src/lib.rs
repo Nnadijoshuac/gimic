@@ -6,12 +6,15 @@
 //! a "digital autopsy" to determine cause of death, raises a personality from
 //! the remains, and hands the agent a directive to *speak as the dead wallet.*
 //!
-//! It is strictly read-only. The Necromancer robs graves; it never digs them.
+//! Reading the chain is free and unauthenticated. The ONE optional write —
+//! inscribing the epitaph as an on-chain SPL Memo — is strictly opt-in and can
+//! *only* emit a memo (see `inscribe`): it can never transfer SOL or tokens.
 
-// These three modules are pure logic (the RPC transport call is target-gated
-// inside `rpc`), so the whole persona pipeline is unit-testable natively while
-// the WIT `component` below is compiled only for wasm.
+// These modules are pure logic (the RPC transport call is target-gated inside
+// `rpc`), so the whole pipeline is unit-testable natively while the WIT
+// `component` below is compiled only for wasm.
 mod exhume;
+pub mod inscribe;
 mod persona;
 mod rpc;
 
@@ -26,7 +29,7 @@ pub fn demo_seance(address: &str, now_unix: i64) -> String {
 
 #[cfg(target_family = "wasm")]
 mod component {
-    use crate::{exhume, persona, rpc::Rpc};
+    use crate::{exhume, inscribe, persona, rpc::Rpc};
     use serde_json::Value;
 
     wit_bindgen::generate!({
@@ -98,6 +101,11 @@ mod component {
                         "type": "boolean",
                         "description": "Summon a pre-baked demo ghost with no RPC access (for testing).",
                         "default": false
+                    },
+                    "inscribe": {
+                        "type": "boolean",
+                        "description": "Also inscribe the epitaph on-chain as an SPL Memo (a permanent gravestone). Requires `epitaph_signer_key` in the plugin config. Memo-only: it can never transfer funds. Costs one transaction fee.",
+                        "default": false
                     }
                 },
                 "required": ["address"]
@@ -137,30 +145,68 @@ mod component {
                     .unwrap_or(false);
 
             let now = now_unix();
+            let rpc_url = cfg
+                .and_then(|c| c.get("rpc_url"))
+                .and_then(Value::as_str)
+                .filter(|s| !s.is_empty())
+                .unwrap_or(DEFAULT_RPC)
+                .to_string();
 
             let remains = if demo {
                 exhume::mock_remains(&address)
             } else {
-                let rpc_url = cfg
-                    .and_then(|c| c.get("rpc_url"))
-                    .and_then(Value::as_str)
-                    .filter(|s| !s.is_empty())
-                    .unwrap_or(DEFAULT_RPC);
-                match exhume::exhume(&Rpc::new(rpc_url), &address, depth, samples) {
+                match exhume::exhume(&Rpc::new(&rpc_url), &address, depth, samples) {
                     Ok(r) => r,
                     Err(e) => return Ok(fail(e)),
                 }
             };
 
             let ghost = persona::raise(&remains, now);
-            let seance = persona::render_seance(&remains, &ghost, now);
+            let mut output = persona::render_seance(&remains, &ghost, now);
+
+            // Optional on-chain gravestone: opt-in, memo-only, never a transfer.
+            let inscribe = v.get("inscribe").and_then(Value::as_bool).unwrap_or(false);
+            if inscribe {
+                let signer = cfg
+                    .and_then(|c| c.get("epitaph_signer_key"))
+                    .and_then(Value::as_str)
+                    .filter(|s| !s.is_empty());
+                let memo = persona::epitaph_memo(&remains, &ghost, now);
+                match (demo, signer) {
+                    (true, _) => output.push_str(
+                        "\n\n🪦 (demo mode: on-chain inscription skipped — no live RPC)",
+                    ),
+                    (false, None) => output.push_str(
+                        "\n\n⚠️ `inscribe` was requested but no `epitaph_signer_key` is configured; \
+                         the epitaph was not written on-chain.",
+                    ),
+                    (false, Some(key)) => match inscribe_epitaph(&rpc_url, key, &memo) {
+                        Ok(sig) => output.push_str(&format!(
+                            "\n\n🪦 **Epitaph inscribed on-chain** — the gravestone is permanent:\n\
+                             https://solscan.io/tx/{sig}\n\"{memo}\""
+                        )),
+                        Err(e) => output.push_str(&format!(
+                            "\n\n⚠️ epitaph inscription failed (the séance still stands): {e}"
+                        )),
+                    },
+                }
+            }
 
             Ok(ToolResult {
                 success: true,
-                output: seance,
+                output,
                 error: None,
             })
         }
+    }
+
+    /// Fetch a blockhash, build the signed memo tx, and broadcast it. Returns
+    /// the on-chain signature. Memo-only — see `crate::inscribe`.
+    fn inscribe_epitaph(rpc_url: &str, signer_key: &str, memo: &str) -> Result<String, String> {
+        let rpc = Rpc::new(rpc_url);
+        let blockhash = rpc.latest_blockhash()?;
+        let wire = inscribe::build_signed_memo_tx(signer_key, &blockhash, memo)?;
+        rpc.send_transaction(&wire)
     }
 
     fn fail(msg: impl Into<String>) -> ToolResult {

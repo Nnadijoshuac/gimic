@@ -122,6 +122,27 @@ impl Rpc {
         Ok(out)
     }
 
+    /// A recent blockhash (base58) for building a transaction.
+    pub fn latest_blockhash(&self) -> Result<String, String> {
+        let result = self.call("getLatestBlockhash", json!([{ "commitment": "finalized" }]))?;
+        result["value"]["blockhash"]
+            .as_str()
+            .map(|s| s.to_string())
+            .ok_or_else(|| "no blockhash in getLatestBlockhash response".to_string())
+    }
+
+    /// Broadcast a base58-encoded signed transaction; returns its signature.
+    pub fn send_transaction(&self, wire_b58: &str) -> Result<String, String> {
+        let result = self.call(
+            "sendTransaction",
+            json!([wire_b58, { "encoding": "base58", "skipPreflight": false }]),
+        )?;
+        result
+            .as_str()
+            .map(|s| s.to_string())
+            .ok_or_else(|| format!("unexpected sendTransaction result: {result}"))
+    }
+
     /// Program IDs touched by a transaction (top-level instructions only).
     /// Used to profile the wallet's on-chain "personality" from a few samples.
     pub fn tx_program_ids(&self, signature: &str) -> Result<Vec<String>, String> {

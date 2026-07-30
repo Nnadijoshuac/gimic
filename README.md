@@ -10,7 +10,9 @@ plugin**, shipped as a signed, sandboxed WASM component. Built for the
 [Superteam Brasil — *Build Solana-native plugins for Zeroclaw* 🦞](https://superteam.fun/earn/listing/zeroclaw)
 bounty.
 
-It is strictly **read-only**. The Necromancer robs graves. It never digs them.
+Summoning is **read-only** — the Necromancer robs graves, it never digs them.
+The one thing it can *write* is an epitaph: an opt-in, memo-only gravestone that
+can never move funds (see [On-chain epitaph](#-on-chain-epitaph-optional)).
 
 ---
 
@@ -200,7 +202,29 @@ Then, in chat:
 
 The tool is named **`seance`**. Parameters: `address` (required), `depth`
 (1–1000 signatures, default 300), `samples` (txns decoded for the personality
-fingerprint, default 5), `demo` (bool).
+fingerprint, default 5), `demo` (bool), `inscribe` (bool — see below).
+
+## 🪦 On-chain epitaph (optional)
+
+Pass `inscribe: true` and the séance writes the ghost's epitaph to the chain as a
+permanent gravestone — a Solana transaction carrying a single **SPL Memo**:
+
+```
+🪦 Epitaph inscribed on-chain — the gravestone is permanent:
+https://solscan.io/tx/<sig>
+"⚰ Saint Nullsoul — Peaceful Retirement. 1000 txns, dead 222d. Rest now. [ZeroClaw Necromancer]"
+```
+
+It needs a low-balance **gravedigger** signer key in config
+(`epitaph_signer_key`) to pay the ~5000-lamport fee. **Memo-only by
+construction:** the plugin can build *nothing but* a memo transaction — no
+transfer path exists in the code — so the key can never move funds. Setup,
+usage, and a live devnet cluster proof (`simulateTransaction` with
+`sigVerify: true`): [`examples/epitaph_inscription.md`](examples/epitaph_inscription.md).
+
+```bash
+cargo run --example gravedigger_keygen   # make + print a gravedigger keypair
+```
 
 ## Signing (optional — only needed for `signature_mode = "strict"`)
 
@@ -219,12 +243,15 @@ publisher key lowercase hex). Add the printed key to
 
 The manifest requests the minimum surface:
 
-- **`http_client`** — to reach Solana JSON-RPC. Read-only methods only.
-- **`config_read`** — to read its own `rpc_url` / `demo` config.
+- **`http_client`** — to reach Solana JSON-RPC (read methods; plus broadcasting a memo tx if `inscribe` is used).
+- **`config_read`** — to read its own config (`rpc_url`, `demo`, and the optional `epitaph_signer_key`).
 
-No `file_write`, no `memory_write`, no keys, no signing of transactions. The
-plugin cannot move funds; it can only *listen to the dead*. It runs inside
-ZeroClaw's fuel-metered, memory-capped WASM sandbox.
+No `file_write`, no `memory_write`. Summoning is **strictly read-only**. The one
+optional write — the epitaph — is **memo-only by construction**: the transaction
+builder can emit exactly one SPL Memo instruction and nothing else, so even with
+a configured signer key the plugin **cannot transfer SOL or tokens**. Inscription
+is off unless you both pass `inscribe: true` and configure a signer. Everything
+runs inside ZeroClaw's fuel-metered, memory-capped WASM sandbox.
 
 ## License
 
