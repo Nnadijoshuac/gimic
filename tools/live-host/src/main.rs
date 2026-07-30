@@ -72,6 +72,9 @@ async fn main() -> Result<()> {
     let rpc_url = args
         .next()
         .unwrap_or_else(|| "https://api.mainnet-beta.solana.com".to_string());
+    // Optional 3rd arg: how many signatures to exhume (1-1000). Dormant wallets
+    // benefit from the full 1000 so their whole life is visible.
+    let depth: u64 = args.next().and_then(|s| s.parse().ok()).unwrap_or(1000);
 
     let wasm_path = std::env::var("NECRO_WASM").unwrap_or_else(|_| {
         "../../target/wasm32-wasip2/release/zeroclaw_necromancer.wasm".into()
@@ -107,8 +110,8 @@ async fn main() -> Result<()> {
     // Exactly the shape the real host produces: args + injected `__config`.
     let input = serde_json::json!({
         "address": address,
-        "depth": 100,
-        "samples": 5,
+        "depth": depth,
+        "samples": 6,
         "__config": { "rpc_url": rpc_url }
     })
     .to_string();

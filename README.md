@@ -80,10 +80,16 @@ send it back to the mempool.
 
 Not just the demo — the **compiled WASM component**, loaded into a real wasmtime
 host and making genuine `wasi:http` calls to `api.mainnet-beta.solana.com`, has
-been run end-to-end against a live wallet. Full transcript:
-[`examples/live_seance.txt`](examples/live_seance.txt). A real whale
-(`F7p3…gmNe`) came back holding **◎2,817 SOL**, **870 live tokens**, and **11,406
-dead token accounts** — flagged 🧟 *UNDEAD* because it still trades today.
+been run end-to-end against live wallets. Full transcripts:
+[`examples/live_seance.txt`](examples/live_seance.txt).
+
+A real dormant wallet (`67Pj…5cF9`) came back as **"Saint Nullsoul"** — a
+2021-born NFT collector with a **1,503-day lifespan** across 1,000 transactions,
+who went quiet 222 days ago still holding **◎4.2 SOL**. The autopsy: 🪦 *AT REST —
+Peaceful Retirement, diamond-handed itself into hibernation.* The transcript also
+includes a live whale (`F7p3…gmNe`, ◎2,817 SOL) that the same autopsy flags 🧟
+*UNDEAD* because it still trades today — real data driving both cause-of-death
+paths.
 
 Reproduce it yourself (no ZeroClaw install needed) with the bundled host:
 
