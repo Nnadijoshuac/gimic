@@ -1,0 +1,22 @@
+[package]
+name = "necromancer-live-host"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# A minimal standalone wasmtime host that loads the compiled Necromancer
+# component and runs its `seance` tool against a live Solana RPC — the same v45
+# loading path ZeroClaw itself uses (base WASI p2 + gated wasi:http + the
+# tool-plugin world). Lets anyone reproduce the live run in examples/live_seance.txt
+# without a full ZeroClaw install.
+#
+#   cargo build --release
+#   ./target/release/necromancer-live-host <WALLET_ADDRESS> [RPC_URL]
+
+[dependencies]
+wasmtime = "45"
+wasmtime-wasi = "45"
+wasmtime-wasi-http = "45"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1"
+serde_json = "1"

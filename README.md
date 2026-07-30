@@ -76,6 +76,28 @@ send it back to the mempool.
 
 ---
 
+## Proven live on mainnet 🛰️
+
+Not just the demo — the **compiled WASM component**, loaded into a real wasmtime
+host and making genuine `wasi:http` calls to `api.mainnet-beta.solana.com`, has
+been run end-to-end against a live wallet. Full transcript:
+[`examples/live_seance.txt`](examples/live_seance.txt). A real whale
+(`F7p3…gmNe`) came back holding **◎2,817 SOL**, **870 live tokens**, and **11,406
+dead token accounts** — flagged 🧟 *UNDEAD* because it still trades today.
+
+Reproduce it yourself (no ZeroClaw install needed) with the bundled host:
+
+```bash
+cargo build --release --target wasm32-wasip2          # build the component
+cd tools/live-host && cargo run --release -- <WALLET_ADDRESS>
+```
+
+`tools/live-host/` is a ~120-line standalone wasmtime host that loads the
+component exactly the way ZeroClaw does (base WASI p2 + gated `wasi:http` + the
+`tool-plugin` world), so the run above exercises the real plugin, not a mock.
+
+---
+
 ## How it works
 
 ```

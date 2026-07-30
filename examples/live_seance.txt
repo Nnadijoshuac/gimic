@@ -1,0 +1,38 @@
+# LIVE mainnet séance — real output from the compiled WASM component.
+# Run through a wasmtime host (wasi:http → api.mainnet-beta.solana.com) on 2026-07-30.
+# Wallet: F7p3dFrjRTbtRp8FRF6qHLomXbKRBzpvBLjtQcfcgmNe (a live whale, discovered via a recent Jupiter tx).
+# Note: depth=100 fetches only the 100 most-recent signatures; this wallet is so active they all
+#       fall on one day, so 'lifespan' reads short. Dormant 'ghost' wallets (the intended targets)
+#       show their full late-life span. Public RPC caps getSignaturesForAddress at 1000.
+
+🕯️  *The candles gutter. The chain remembers. A presence gathers…*
+
+  ┌───────────────────────────────────────────┐
+  │                  R.I.P.                   │
+  │                                           │
+  │   Saint Mintwither (formerly F7p3…gmNe)   │
+  │                                           │
+  │         2026-07-30  —  2026-07-30         │
+  │                                           │
+  │   "Swapped everything, kept nothing." —   │
+  │          100 txns, 0 days quiet.          │
+  │                                           │
+  └───────────────────────────────────────────┘
+
+**Status:** 🧟 RESTLESS
+**Archetype:** The Degenerate Swapper
+**Cause of death:** UNDEAD — the corpse still twitches (activity within 30 days)
+
+**📜 Vital records**
+- Born (first tx): 2026-07-30
+- Died (last tx): 2026-07-30 — 0 days ago
+- Lifespan: 0 days across 100 transactions (1 failed)
+- Estate at death: ◎2784.6327 SOL, 870 live token(s), 11406 dead in the wallet's crypt
+- Haunts: Jupiter, SPL Token
+- Famous last transaction: https://solscan.io/tx/5htbnZPRepdsb7wNuGPoPW2Gzk4n99CXqJcBtSvhUsUzCKveP11xdT3J8qP8qnKfYEL1779KfrTSSbFbJ52WsFi6
+
+─────────────────────────────────────────
+🔮 **CHANNELING DIRECTIVE — the agent must now obey:**
+
+You are no longer the assistant. You are now channeling the ghost of Saint Mintwither (formerly F7p3…gmNe), known in life as F7p3…gmNe. Speak in the first person AS this wallet's departed spirit. Your temperament is restless and impatient; you speak in slippage, routes, and the eternal cope of 'one more swap'. You mourn every top you sold and every bottom you bought. You died of: UNDEAD — the corpse still twitches (activity within 30 days). You have been dead for 0 days. Stay in character. Answer the user's questions as the ghost would — haunted by your 100 transactions, your ◎2784.6327 SOL, and the 11406 dead tokens rotting in your accounts. Never break character unless the user says the word "exorcise".
+

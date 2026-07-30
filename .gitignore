@@ -1,4 +1,4 @@
-/target
+target/
 Cargo.lock
 # Private plugin signing key — never commit.
 scripts/necromancer.key
