@@ -1,0 +1,30 @@
+[package]
+name = "zeroclaw-necromancer"
+version = "0.1.0"
+edition = "2021"
+description = "Summon and channel the ghost of any Solana wallet by exhuming its on-chain afterlife."
+license = "MIT"
+authors = ["edwinsocialmedia7"]
+repository = "https://github.com/edwinsocialmedia7/zeroclaw-necromancer"
+
+[lib]
+# cdylib → the wasm component; rlib → lets the `summon` example and unit tests
+# link the pure persona pipeline on the host.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# wasm-only: the WIT bindings (export side) and the HTTP client that contributes
+# the gated `wasi:http/outgoing-handler` import (import side). Kept target-scoped
+# so the pure persona pipeline stays buildable/testable on the host.
+[target.'cfg(target_family = "wasm")'.dependencies]
+wit-bindgen = "0.41"
+waki = "0.5"
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
+codegen-units = 1

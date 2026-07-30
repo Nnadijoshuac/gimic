@@ -1,0 +1,21 @@
+# ZeroClaw plugin manifest — the Necromancer.
+#
+# Place this file and the compiled `zeroclaw_necromancer.wasm` together in a
+# directory under your configured `plugins_dir` (e.g. ~/.zeroclaw/plugins/zeroclaw-necromancer/),
+# or install with:  zeroclaw plugin install ./zeroclaw-necromancer
+#
+# `signature` and `publisher_key` are added by `scripts/sign.sh` and are only
+# required when `[plugins.security] signature_mode = "strict"`.
+
+name = "zeroclaw-necromancer"
+version = "0.1.0"
+description = "Summon and channel the ghost of any Solana wallet by exhuming its on-chain afterlife."
+author = "edwinsocialmedia7"
+wasm_path = "zeroclaw_necromancer.wasm"
+
+# One tool capability.
+capabilities = ["tool"]
+
+# HttpClient  → reach Solana JSON-RPC (read-only).
+# ConfigRead  → read the plugin's own config section (rpc_url, demo).
+permissions = ["http_client", "config_read"]
