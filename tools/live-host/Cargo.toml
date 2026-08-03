@@ -4,11 +4,11 @@ version = "0.0.0"
 edition = "2021"
 publish = false
 
-# A minimal standalone wasmtime host that loads the compiled Necromancer
-# component and runs its `seance` tool against a live Solana RPC — the same v45
-# loading path ZeroClaw itself uses (base WASI p2 + gated wasi:http + the
-# tool-plugin world). Lets anyone reproduce the live run in examples/live_seance.txt
-# without a full ZeroClaw install.
+# A minimal standalone wasmtime host that loads the compiled wallet-diligence
+# component and runs its `wallet_diligence` tool against a live Solana RPC — the
+# same v45 loading path ZeroClaw itself uses (base WASI p2 + gated wasi:http +
+# the tool-plugin world). Lets anyone reproduce the Tier-3 plugin against real
+# mainnet data without a full ZeroClaw install.
 #
 #   cargo build --release
 #   ./target/release/necromancer-live-host <WALLET_ADDRESS> [RPC_URL]

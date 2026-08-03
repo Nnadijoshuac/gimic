@@ -1,13 +1,13 @@
-package necromancer:seance@0.1.0;
+package wallet-diligence:plugin@0.1.0;
 
-/// The Necromancer is a single-tool ZeroClaw plugin. It exports the standard
-/// `tool` and `plugin-info` interfaces so the agent runtime registers it as a
-/// native capability, and imports `logging` for structured host logs.
+/// The optional Tier-3 variant of the wallet due-diligence engine, as a ZeroClaw
+/// tool plugin. It exports the standard `tool` and `plugin-info` interfaces so
+/// the agent registers it as a native capability, and imports `logging`.
 ///
-/// Outbound HTTP to Solana RPC is NOT declared here: it is contributed by the
-/// `waki` client at build time as `wasi:http/outgoing-handler`, and the host
-/// links it only when the plugin is granted the `HttpClient` permission.
-world necromancer {
+/// Read-only: it declares no key/signing capability. Outbound HTTP to Solana RPC
+/// is contributed by the `waki` client as `wasi:http/outgoing-handler`, linked
+/// by the host only when the plugin is granted the `HttpClient` permission.
+world diligence {
     import zeroclaw:plugin/logging@0.1.0;
     export zeroclaw:plugin/plugin-info@0.1.0;
     export zeroclaw:plugin/tool@0.1.0;

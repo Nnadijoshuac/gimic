@@ -1,21 +1,22 @@
-# ZeroClaw plugin manifest — the Necromancer.
+# ZeroClaw plugin manifest — the OPTIONAL Tier-3 wallet-diligence tool plugin.
+# (The primary submission is the Tier-1 skill in skills/wallet-diligence/.)
 #
-# Place this file and the compiled `zeroclaw_necromancer.wasm` together in a
-# directory under your configured `plugins_dir` (e.g. ~/.zeroclaw/plugins/zeroclaw-necromancer/),
-# or install with:  zeroclaw plugin install ./zeroclaw-necromancer
+# Place this file and the compiled wasm together under your configured
+# plugins_dir, or install with:  zeroclaw plugin install ./solana-wallet-diligence
+# Requires a source build with a plugin backend (cargo build --features plugins-wasm-cranelift).
 #
-# `signature` and `publisher_key` are added by `scripts/sign.sh` and are only
-# required when `[plugins.security] signature_mode = "strict"`.
+# `signature`/`publisher_key` are added by scripts/sign.mjs and only needed when
+# [plugins.security] signature_mode = "strict".
 
-name = "zeroclaw-necromancer"
-version = "0.1.0"
-description = "Summon and channel the ghost of any Solana wallet by exhuming its on-chain afterlife."
-author = "edwinsocialmedia7"
-wasm_path = "zeroclaw_necromancer.wasm"
+name = "solana-wallet-diligence"
+version = "0.2.0"
+description = "Read-only Solana wallet due-diligence — a counterparty risk report from on-chain history."
+author = "Nnadijoshuac"
+wasm_path = "solana_wallet_diligence.wasm"
 
 # One tool capability.
 capabilities = ["tool"]
 
-# HttpClient  → reach Solana JSON-RPC (read-only).
-# ConfigRead  → read the plugin's own config section (rpc_url, demo).
+# HttpClient → read-only Solana JSON-RPC.  ConfigRead → its own rpc_url config.
+# No signing/fund permissions exist; this plugin is read-only (custody tier T0).
 permissions = ["http_client", "config_read"]

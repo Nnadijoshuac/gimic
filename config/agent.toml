@@ -1,0 +1,77 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Solana Wallet Due-Diligence — ZeroClaw agent config (excerpt)
+#
+# Custody tier T0 (READ-ONLY). No private key is held anywhere in this config or
+# in the skill. Secrets (model provider key, Telegram bot token) are set via
+# `zeroclaw config set` — masked and encrypted at rest — and must NEVER be
+# committed. The values below are placeholders.
+#
+# Shapes are written against the current ZeroClaw docs/schema (master). Lines
+# marked  ⚠VALIDATE  use enum/nested shapes whose exact TOML nesting can vary by
+# version — run `zeroclaw config validate` (and `zeroclaw sop/skills list`) on
+# your binary and adjust. See SETUP.md.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Model provider (any of ZeroClaw's 70+). Example: Anthropic. ──
+default_provider = "anthropic"
+default_model = "claude-sonnet-4-20250514"
+# Set the key with:  zeroclaw config set api_key        (masked, encrypted)
+
+# ── Built-in HTTP tool: allowlist ONLY the Solana RPC host ──
+# This is the whole network surface the agent needs. Private hosts stay blocked
+# (SSRF protection) by default.
+[http_request]
+enabled = true
+allowed_domains = ["api.mainnet-beta.solana.com"]
+# If you run a private RPC (Helius/Triton/QuickNode), add its host here too.
+max_response_size = 1000000
+timeout_secs = 30
+
+# ── Telegram channel (alias "home") over long polling — no public URL needed ──
+# Create a bot via @BotFather, then:
+#   zeroclaw config set channels.telegram.home.bot_token      (masked)
+#   zeroclaw config set channels.telegram.home.enabled true
+[channels.telegram.home]
+enabled = true
+
+# ── The agent ──
+[agents.primary]
+channels = ["telegram.home"]
+# Load the skills bundle that contains wallet-diligence.
+skill_bundles = ["solana"]
+# Optional: run the watchlist monitor on a schedule (see [cron.watchlist]).
+cron_jobs = ["watchlist"]
+# Read-only posture: the agent never needs signing/fund tools.
+allowed_tools = ["http_request", "memory_recall", "memory_store"]
+
+# ── Skills bundle: resolves to <install>/shared/skills/solana/ when directory
+#    is omitted. Put skills/wallet-diligence/ inside that folder. ──
+[skill_bundles.solana]
+
+# ── Authorization: only these Telegram identities may talk to the bot ──
+# Everyone else is ignored. Authorization lives in peer groups, not the channel.
+# Member format: see docs/book channels/peer-groups.  ⚠VALIDATE the exact form.
+[peer_groups.owner]
+members = ["telegram:<your-telegram-numeric-id-or-@username>"]
+
+# ── Optional watchlist monitor (T0 alerts, no approvals — nothing to sign) ──
+# Re-checks wallets the owner saved to memory and alerts on new activity or a
+# worsened verdict. A cron *agent job* is the correct minimal layer here: with no
+# fund action, there is nothing an approval-gated SOP would add.
+[cron.watchlist]
+name = "Wallet watchlist monitor"
+job_type = "agent"
+enabled = true
+uses_memory = true
+allowed_tools = ["http_request", "memory_recall", "memory_store"]
+prompt = """
+For each Solana address stored in memory under `watchlist`, run the
+wallet-diligence skill. If a wallet has new activity since the last check or its
+verdict worsened, post a short alert to the owner. Otherwise stay silent.
+"""
+
+# ⚠VALIDATE  CronScheduleDecl nesting. Every 6 hours:
+[cron.watchlist.schedule]
+cron = { expr = "0 */6 * * *" }
+# Simpler alternative if the cron-expr shape is rejected on your version:
+# every = { every_ms = 21600000 }

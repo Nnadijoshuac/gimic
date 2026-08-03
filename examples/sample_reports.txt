@@ -1,0 +1,64 @@
+# Real due-diligence reports from the native reference profiler
+# (examples/diligence.rs, ureq -> mainnet) on 2026-08-03. Same analysis the
+# ZeroClaw wallet-diligence skill produces via the built-in http_request tool.
+# Addresses are real; verdicts are heuristic, not financial advice.
+
+=================  [dormant NFT collector, still holds SOL]  =================
+🔍 Wallet due-diligence — 67Pj…5cF9
+Verdict: 🟡 CAUTION  (confidence: partial (history truncated at 1000 signatures))
+
+• Scanned: last 1000 txns (window; full age not shown), 3% failed
+• Last activity: 2025-12-20 (226 days ago) — dormant
+• Holdings: ◎4.209 SOL, 28 live tokens, 0 empty accounts
+• Profile: NFT collector / trader (uses System, Metaplex)
+
+⚠️ Risk signals:
+  - Dormant 226d — stale; confirm the wallet is still controlled.
+
+✅ Reassuring:
+  - High activity — more than 1000 transactions (older/busier than this scan window).
+  - Holds ◎4.21 SOL.
+  - Clean execution (3% failed txns).
+
+→ Proceed with care; confirm the counterparty through a second channel.
+
+
+=================  [drained + dormant]  =================
+🔍 Wallet due-diligence — AwpX…ccUm
+Verdict: ⚠️ ELEVATED RISK  (confidence: partial (history truncated at 1000 signatures))
+
+• Scanned: last 1000 txns (window; full age not shown), 10% failed
+• Last activity: 2025-01-31 (549 days ago) — dormant
+• Holdings: ◎0.000 SOL, 2 live tokens, 0 empty accounts
+• Profile: NFT collector / trader (uses System, Metaplex, Magic Eden, SPL Token)
+
+⚠️ Risk signals:
+  - Near-zero SOL — cannot cover its own fees (drained or abandoned?).
+  - Dormant 549d — stale; confirm the wallet is still controlled.
+
+✅ Reassuring:
+  - High activity — more than 1000 transactions (older/busier than this scan window).
+
+→ Treat as high-risk. Verify identity out-of-band and avoid custody-heavy interactions.
+
+
+=================  [high-volume active trader, heavy airdrop exposure]  =================
+🔍 Wallet due-diligence — F7p3…gmNe
+Verdict: 🟡 CAUTION  (confidence: partial (history truncated at 1000 signatures))
+
+• Scanned: last 200 txns (window; full age not shown), 0% failed
+• Last activity: 2026-08-03 (0 days ago)
+• Holdings: ◎3566.153 SOL, 879 live tokens, 11482 empty accounts
+• Profile: active DEX trader (uses SPL Token, Jupiter)
+
+⚠️ Risk signals:
+  - 11482 empty token accounts — heavy airdrop/spam exposure (common in farm/scam-adjacent wallets).
+
+✅ Reassuring:
+  - High activity — more than 200 transactions (older/busier than this scan window).
+  - Holds ◎3566.15 SOL.
+  - Clean execution (0% failed txns).
+
+→ Proceed with care; confirm the counterparty through a second channel.
+
+

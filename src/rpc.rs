@@ -2,11 +2,13 @@
 // component. Silence the resulting dead-code noise on the host build.
 #![allow(dead_code)]
 
-//! Solana JSON-RPC access over `wasi:http` (via `waki`).
+//! Read-only Solana JSON-RPC access.
 //!
-//! The Necromancer only *reads* the chain — it exhumes, it never buries. Every
-//! call here is a read-only JSON-RPC method against a standard Solana endpoint,
-//! so it works against the free `api.mainnet-beta.solana.com` with no API key.
+//! Transport is target-split: `waki` over `wasi:http` inside the wasm component,
+//! `ureq` natively (examples, tests, sample-report generation). Every method is
+//! a read-only JSON-RPC call against a standard endpoint, so it works against
+//! the free `api.mainnet-beta.solana.com` with no API key. Nothing here signs,
+//! sends, or mutates anything on-chain.
 
 use serde_json::{json, Value};
 
@@ -45,9 +47,7 @@ impl Rpc {
         Ok(parsed.get("result").cloned().unwrap_or(Value::Null))
     }
 
-    /// The actual wire call. On wasm this uses `waki` over `wasi:http`; natively
-    /// (unit tests) there is no transport and it errors — tests exercise the
-    /// pure persona pipeline via `mock_remains`, not live RPC.
+    /// The actual wire call. On wasm this uses `waki` over `wasi:http`.
     #[cfg(target_family = "wasm")]
     fn transport(&self, body: &Value, method: &str) -> Result<Vec<u8>, String> {
         let resp = waki::Client::new()
@@ -61,9 +61,19 @@ impl Rpc {
             .map_err(|e| format!("rpc body read error ({method}): {e}"))
     }
 
+    /// Native transport via `ureq` — powers the reference profiler and the
+    /// sample-report generator.
     #[cfg(not(target_family = "wasm"))]
-    fn transport(&self, _body: &Value, _method: &str) -> Result<Vec<u8>, String> {
-        Err("no HTTP transport off-wasm (use demo mode or mock_remains)".to_string())
+    fn transport(&self, body: &Value, method: &str) -> Result<Vec<u8>, String> {
+        let resp = ureq::post(&self.url)
+            .set("Content-Type", "application/json")
+            .set("Accept", "application/json")
+            .send_bytes(&serde_json::to_vec(body).map_err(|e| e.to_string())?)
+            .map_err(|e| format!("rpc transport error ({method}): {e}"))?;
+        let mut buf = Vec::new();
+        std::io::Read::read_to_end(&mut resp.into_reader(), &mut buf)
+            .map_err(|e| format!("rpc body read error ({method}): {e}"))?;
+        Ok(buf)
     }
 
     /// Confirmed signatures for an address, newest first (RPC caps at 1000).
@@ -120,27 +130,6 @@ impl Rpc {
             }
         }
         Ok(out)
-    }
-
-    /// A recent blockhash (base58) for building a transaction.
-    pub fn latest_blockhash(&self) -> Result<String, String> {
-        let result = self.call("getLatestBlockhash", json!([{ "commitment": "finalized" }]))?;
-        result["value"]["blockhash"]
-            .as_str()
-            .map(|s| s.to_string())
-            .ok_or_else(|| "no blockhash in getLatestBlockhash response".to_string())
-    }
-
-    /// Broadcast a base58-encoded signed transaction; returns its signature.
-    pub fn send_transaction(&self, wire_b58: &str) -> Result<String, String> {
-        let result = self.call(
-            "sendTransaction",
-            json!([wire_b58, { "encoding": "base58", "skipPreflight": false }]),
-        )?;
-        result
-            .as_str()
-            .map(|s| s.to_string())
-            .ok_or_else(|| format!("unexpected sendTransaction result: {result}"))
     }
 
     /// Program IDs touched by a transaction (top-level instructions only).

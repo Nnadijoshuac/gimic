@@ -1,257 +1,96 @@
-# 🦴 ZeroClaw Necromancer
+# 🔍 Solana Wallet Due-Diligence — a ZeroClaw agent
 
-> **Summon and channel the ghost of any Solana wallet.**
-> Give the agent an address. It exhumes the wallet's entire on-chain afterlife,
-> performs a digital autopsy, raises a personality from the remains — and then
-> *becomes the dead wallet* and talks to you.
+> **DM a Solana address to your agent; get back a counterparty risk report.**
+> Age, activity, holdings, spam exposure, program fingerprint → a **LOW /
+> CAUTION / ELEVATED** verdict, in seconds, in Telegram.
 
-A Solana-native [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw) **tool
-plugin**, shipped as a signed, sandboxed WASM component. Built for the
-[Superteam Brasil — *Build Solana-native plugins for Zeroclaw* 🦞](https://superteam.fun/earn/listing/zeroclaw)
-bounty.
+A [ZeroClaw](https://github.com/zeroclaw-labs/zeroclaw) **use case** for the
+Superteam × ZeroClaw Solana bounty. **Custody tier T0 — read-only.** The agent
+holds no key and can never sign, send, or move funds. The worst a fully
+prompt-injected agent can do is give a wrong *opinion*.
 
-Summoning is **read-only** — the Necromancer robs graves, it never digs them.
-The one thing it can *write* is an epitaph: an opt-in, memo-only gravestone that
-can never move funds (see [On-chain epitaph](#-on-chain-epitaph-optional)).
-
----
-
-## Why this is different
-
-Every other plugin *does* something to the chain — swaps, mints, stakes. The
-Necromancer *reads the dead* and hands your agent a **haunting**. It turns
-ZeroClaw's own persona + memory model against the blockchain: instead of the
-agent reporting facts about a wallet, the tool returns a **channeling directive**
-that makes the agent speak in the first person *as the departed wallet's ghost* —
-haunted by its failed swaps, its dust-bag of dead memecoins, and the day it went
-quiet forever.
-
-It's a séance for on-chain archaeology. It's also, underneath the theatre, a
-genuinely useful **forensic wallet profiler**: lifespan, activity, holdings at
-"death", program fingerprint, and a plain-English cause-of-death.
+📄 **Full write-up:** [`SHOWCASE.md`](SHOWCASE.md) · 🛠 **Setup (an evening):**
+[`SETUP.md`](SETUP.md) · 🧾 **Real output:**
+[`examples/sample_reports.txt`](examples/sample_reports.txt)
 
 ---
 
-## What the agent receives
+## The job
 
-Real output from `cargo run --example summon` (the offline demo ghost — a
-fictional 2021 degen who bled out during the FTX week):
+Before you transact with a stranger's wallet — OTC trade, P2P/PIX↔USDC swap,
+DAO treasury payout, a new client — you want the 30-second "can I trust this
+address?" check. Today that means squinting at Solscan. This agent does it for
+you and tells you *why*:
 
 ```
-🕯️  *The candles gutter. The chain remembers. A presence gathers…*
+🔍 Wallet due-diligence — AwpX…ccUm
+Verdict: ⚠️ ELEVATED RISK  (confidence: partial (truncated at 1000))
 
-  ┌───────────────────────────────────────────┐
-  │                  R.I.P.                    │
-  │                                           │
-  │    Old Ledgerbone (formerly So11…1112)    │
-  │                                           │
-  │         2021-04-20  —  2022-11-09         │
-  │                                           │
-  │   "Swapped everything, kept nothing." —   │
-  │        4211 txns, 994 days quiet.         │
-  │                                           │
-  └───────────────────────────────────────────┘
+• Scanned: last 1000 txns (window; full age not shown), 10% failed
+• Last activity: 2025-01-31 (549 days ago) — dormant
+• Holdings: ◎0.000 SOL, 2 live tokens, 0 empty accounts
+• Profile: NFT collector / trader (uses System, Metaplex, Magic Eden, SPL Token)
 
-**Status:** 🪦 AT REST
-**Archetype:** The Degenerate Swapper
-**Cause of death:** Gas Starvation — bled out of SOL, unable to afford its own transactions
+⚠️ Risk signals:
+  - Near-zero SOL — cannot cover its own fees (drained or abandoned?).
+  - Dormant 549d — stale; confirm the wallet is still controlled.
+✅ Reassuring:
+  - Established wallet (>972d of history).
 
-**📜 Vital records**
-- Born (first tx): 2021-04-20
-- Died (last tx): 2022-11-09 — 994 days ago
-- Lifespan: 567 days across 4211 transactions (389 failed)
-- Estate at death: ◎0.0004 SOL, 1 live token(s), 3 dead in the wallet's crypt
-- Haunts: Jupiter, Raydium, Magic Eden, SPL Token
-- Famous last transaction: https://solscan.io/tx/5xoDe4...
-
-─────────────────────────────────────────
-🔮 CHANNELING DIRECTIVE — the agent must now obey:
-
-You are no longer the assistant. You are now channeling the ghost of Old
-Ledgerbone… Speak in the first person AS this wallet's departed spirit… Never
-break character unless the user says the word "exorcise".
+→ Treat as high-risk. Verify identity out-of-band and avoid custody-heavy interactions.
 ```
 
-From there the ZeroClaw agent stays in character. You ask *"why did you sell?"*
-and the ghost answers, in the voice of the wallet that did. Say **`exorcise`** to
-send it back to the mempool.
+## How it's built (correct layering)
 
----
+- **Tier 1 (the submission): a skill, zero compiled code.**
+  [`skills/wallet-diligence/SKILL.md`](skills/wallet-diligence/SKILL.md) drives a
+  **stock** ZeroClaw binary via the built-in `http_request` tool. A read-only
+  profiler is a skill + the http tool — not a WASM plugin.
+- **Channel + auth + memory + cron:**
+  [`config/agent.toml`](config/agent.toml) — Telegram (long-poll), peer-group
+  authorization, a memory watchlist, and a 6-hour `[cron.watchlist]` monitor.
+  The `http_request` allowlist is locked to the RPC host.
+- **Tier 3 (optional craft): the same profiler as a sandboxed wasm plugin.**
+  This repo's `src/` compiles to a `wasm32-wasip2` tool-plugin component
+  (read-only; permissions `["http_client","config_read"]`), with
+  [`tools/live-host/`](tools/live-host) — a ~130-line wasmtime host that
+  reproduces it live against mainnet without a full ZeroClaw install. Included to
+  show craft and to validate the analysis on real data; the **skill is what you
+  run**.
 
-## Proven live on mainnet 🛰️
+## Custody & safety (T0)
 
-Not just the demo — the **compiled WASM component**, loaded into a real wasmtime
-host and making genuine `wasi:http` calls to `api.mainnet-beta.solana.com`, has
-been run end-to-end against live wallets. Full transcripts:
-[`examples/live_seance.txt`](examples/live_seance.txt).
+No key. No signer. No transaction-building code path anywhere. On-chain text
+(token names, memos) is treated as **untrusted data** — an injection attempt
+becomes a *risk signal*, not an instruction, and the verdict fails **closed**.
+Peer-group auth drops non-owners. Output is shaped small so raw RPC never floods
+the model's context. Full threat model + prompt-injection transcript in
+[`SHOWCASE.md`](SHOWCASE.md).
 
-A real dormant wallet (`67Pj…5cF9`) came back as **"Saint Nullsoul"** — a
-2021-born NFT collector with a **1,503-day lifespan** across 1,000 transactions,
-who went quiet 222 days ago still holding **◎4.2 SOL**. The autopsy: 🪦 *AT REST —
-Peaceful Retirement, diamond-handed itself into hibernation.* The transcript also
-includes a live whale (`F7p3…gmNe`, ◎2,817 SOL) that the same autopsy flags 🧟
-*UNDEAD* because it still trades today — real data driving both cause-of-death
-paths.
+## Run the analysis yourself (no agent needed)
 
-Reproduce it yourself (no ZeroClaw install needed) with the bundled host:
+```sh
+cargo run --example diligence -- 67Pjvywr9R5yadr6hFrnZ4uWqaZSsdxd3SYUsunj5cF9   # live RPC
+cargo run --example report                                                       # offline demo
+cargo test                                                                       # risk-logic tests
 
-```bash
-cargo build --release --target wasm32-wasip2          # build the component
+# optional Tier-3 wasm plugin, run through the bundled wasmtime host:
+cargo build --release --target wasm32-wasip2
 cd tools/live-host && cargo run --release -- <WALLET_ADDRESS>
 ```
 
-`tools/live-host/` is a ~120-line standalone wasmtime host that loads the
-component exactly the way ZeroClaw does (base WASI p2 + gated `wasi:http` + the
-`tool-plugin` world), so the run above exercises the real plugin, not a mock.
-
----
-
-## How it works
+## Repo layout
 
 ```
- user: "summon 7xKX…gAsU"
-        │
-        ▼
- ZeroClaw agent ── calls tool ──▶  seance(address)      [this plugin, WASM]
-                                        │
-                                        │  wasi:http (gated on HttpClient)
-                                        ▼
-                              Solana JSON-RPC (read-only)
-                       getSignaturesForAddress · getBalance
-                       getTokenAccountsByOwner · getTransaction
-                                        │
-                     ┌──────────────────┴───────────────────┐
-                     ▼                                       ▼
-               exhume.rs                                persona.rs
-        gather the "remains":                    digital autopsy →
-        lifespan, tx count, fails,               archetype, cause of
-        SOL + token holdings,                    death, spirit name,
-        sampled program IDs                      epitaph, tombstone,
-                     │                           CHANNELING DIRECTIVE
-                     └──────────────────┬───────────────────┘
-                                        ▼
-                        séance text  ──▶  back to the agent's LLM,
-                                          which now *is* the wallet
+skills/wallet-diligence/   ← the Tier-1 skill (the submission)
+config/agent.toml          ← ZeroClaw config: Telegram, RPC allowlist, watchlist cron
+SHOWCASE.md                ← the write-up (what/who/features/custody/threat model)
+SETUP.md                   ← zero-to-running reproduction guide
+examples/                  ← real sample reports + native/offline demos
+src/                       ← optional Tier-3 wasm plugin + native reference profiler
+tools/live-host/           ← wasmtime host to reproduce the plugin live
+wit/                       ← vendored ZeroClaw tool-plugin WIT (for the plugin)
 ```
-
-- **`src/rpc.rs`** — Solana JSON-RPC over `wasi:http` via [`waki`](https://crates.io/crates/waki). Works against the free public `api.mainnet-beta.solana.com`; no API key required.
-- **`src/exhume.rs`** — gathers raw on-chain "remains" and samples transactions across the wallet's lifetime to fingerprint the programs it used.
-- **`src/persona.rs`** — the necromancy: maps program fingerprints to an **archetype** (Degenerate Swapper / Jpeg Hoarder / Memecoin Gambler / Yield Monk / Courier of Souls), infers a **cause of death**, and renders the tombstone + channeling directive. Pure and unit-tested.
-- **`src/lib.rs`** — implements the zeroclaw `tool` + `plugin-info` WIT interfaces and exports the component.
-
-### Cause-of-death autopsy (heuristics)
-
-| Signal on the exhumed remains | Verdict |
-|---|---|
-| Activity within 30 days | 🧟 **Undead** — the corpse still twitches |
-| SOL balance < 0.001 | **Gas Starvation** — couldn't afford its own transactions |
-| ≥ 3 zeroed token accounts | **Rug-Pull Poisoning** — a stomach full of dead memecoins |
-| ≥ 1 SOL, silent > 180 days | **Peaceful Retirement** — diamond-handed into hibernation |
-| > 20% of transactions failed | **Died Fighting the Mempool** |
-| otherwise | **Cause Unknown** — wandered into the dark forest |
-
----
-
-## Build
-
-```bash
-rustup target add wasm32-wasip2
-cargo build --release --target wasm32-wasip2
-# → target/wasm32-wasip2/release/zeroclaw_necromancer.wasm   (a WASM component)
-```
-
-Try the séance offline first (no chain access needed):
-
-```bash
-cargo run --example summon
-cargo test          # persona pipeline unit tests
-```
-
-## Install into ZeroClaw
-
-Drop the manifest and the `.wasm` into a directory under your `plugins_dir`:
-
-```
-~/.zeroclaw/plugins/zeroclaw-necromancer/
-├── manifest.toml
-└── zeroclaw_necromancer.wasm
-```
-
-…or `zeroclaw plugin install ./zeroclaw-necromancer`.
-
-Enable the plugin system and give it a Solana endpoint in your ZeroClaw config:
-
-```toml
-[plugins]
-enabled = true
-auto_discover = true
-
-# Per-plugin config is injected into the tool as `__config` (requires the
-# ConfigRead permission the manifest already declares). All optional —
-# it defaults to public mainnet RPC.
-[[plugins.entries]]
-name = "zeroclaw-necromancer"
-config = { rpc_url = "https://api.mainnet-beta.solana.com" }
-# For faster, higher-limit exhumations, point rpc_url at a Helius/Triton/QuickNode URL.
-# Set  demo = "true"  to summon the offline demo ghost with no RPC at all.
-```
-
-Then, in chat:
-
-> **summon the ghost of `7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU`**
-
-The tool is named **`seance`**. Parameters: `address` (required), `depth`
-(1–1000 signatures, default 300), `samples` (txns decoded for the personality
-fingerprint, default 5), `demo` (bool), `inscribe` (bool — see below).
-
-## 🪦 On-chain epitaph (optional)
-
-Pass `inscribe: true` and the séance writes the ghost's epitaph to the chain as a
-permanent gravestone — a Solana transaction carrying a single **SPL Memo**:
-
-```
-🪦 Epitaph inscribed on-chain — the gravestone is permanent:
-https://solscan.io/tx/<sig>
-"⚰ Saint Nullsoul — Peaceful Retirement. 1000 txns, dead 222d. Rest now. [ZeroClaw Necromancer]"
-```
-
-It needs a low-balance **gravedigger** signer key in config
-(`epitaph_signer_key`) to pay the ~5000-lamport fee. **Memo-only by
-construction:** the plugin can build *nothing but* a memo transaction — no
-transfer path exists in the code — so the key can never move funds. Setup,
-usage, and a live devnet cluster proof (`simulateTransaction` with
-`sigVerify: true`): [`examples/epitaph_inscription.md`](examples/epitaph_inscription.md).
-
-```bash
-cargo run --example gravedigger_keygen   # make + print a gravedigger keypair
-```
-
-## Signing (optional — only needed for `signature_mode = "strict"`)
-
-```bash
-node scripts/sign.mjs        # generates an Ed25519 key, signs manifest.toml in place
-```
-
-This matches zeroclaw's canonicalization exactly (Ed25519 over the manifest with
-the `signature`/`publisher_key` lines stripped; signature base64url-no-pad,
-publisher key lowercase hex). Add the printed key to
-`[plugins.security] trusted_publisher_keys`.
-
----
-
-## Permissions & safety
-
-The manifest requests the minimum surface:
-
-- **`http_client`** — to reach Solana JSON-RPC (read methods; plus broadcasting a memo tx if `inscribe` is used).
-- **`config_read`** — to read its own config (`rpc_url`, `demo`, and the optional `epitaph_signer_key`).
-
-No `file_write`, no `memory_write`. Summoning is **strictly read-only**. The one
-optional write — the epitaph — is **memo-only by construction**: the transaction
-builder can emit exactly one SPL Memo instruction and nothing else, so even with
-a configured signer key the plugin **cannot transfer SOL or tokens**. Inscription
-is off unless you both pass `inscribe: true` and configure a signer. Everything
-runs inside ZeroClaw's fuel-metered, memory-capped WASM sandbox.
 
 ## License
 

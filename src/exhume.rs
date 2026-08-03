@@ -3,7 +3,7 @@
 #![allow(dead_code)]
 
 //! Exhumation: gather a wallet's on-chain remains into a single dossier of raw
-//! facts. No interpretation happens here — that is the necromancer's job
+//! facts. No interpretation happens here — that is the report's job
 //! (`persona.rs`). This module just digs.
 
 use crate::rpc::{Rpc, TokenHolding};
@@ -21,6 +21,10 @@ pub struct Remains {
     /// Distinct program IDs observed across the sampled transactions.
     pub programs: Vec<String>,
     pub last_signature: Option<String>,
+    /// True when the signature scan hit the requested depth — the wallet has
+    /// more history than we saw, so `first_seen`/`lifespan_days` are lower
+    /// bounds and "very new wallet" must not be inferred.
+    pub truncated: bool,
 }
 
 impl Remains {
@@ -59,8 +63,8 @@ pub fn exhume(rpc: &Rpc, address: &str, depth: u32, samples: usize) -> Result<Re
 
     if sigs.is_empty() {
         return Err(format!(
-            "The grave is empty. {address} has no recorded transactions on this cluster — \
-             an unborn soul, or a ghost from another chain."
+            "{address} has no recorded transactions on this cluster — a brand-new, \
+             unused, or wrong-network address. Treat as unproven."
         ));
     }
 
@@ -97,6 +101,9 @@ pub fn exhume(rpc: &Rpc, address: &str, depth: u32, samples: usize) -> Result<Re
         tokens,
         programs,
         last_signature,
+        // We hit the requested window (capped at the RPC's 1000 max) → older
+        // history exists beyond what we scanned.
+        truncated: total_signatures as u32 >= depth.min(1000),
     })
 }
 
@@ -115,8 +122,8 @@ fn pick_samples(sigs: &[String], n: usize) -> Vec<String> {
         .collect()
 }
 
-/// A pre-baked wallet for offline demos and CI. Lets judges run a séance with
-/// zero RPC access. This is the ghost of a fictional 2021 degen.
+/// A pre-baked wallet for offline demos and CI (no RPC needed): a near-empty,
+/// dust-laden memecoin trader that should read as ELEVATED risk.
 pub fn mock_remains(address: &str) -> Remains {
     Remains {
         address: address.to_string(),
@@ -141,5 +148,6 @@ pub fn mock_remains(address: &str) -> Remains {
         last_signature: Some(
             "5xoDe4dGh0stTxSignatureExampleParaNormal1111111111111111111111111111111111111111111111".into(),
         ),
+        truncated: true,
     }
 }
